@@ -1,0 +1,195 @@
+<html>
+	<head>
+		<link href="assets/style.css" type="text/css" rel="stylesheet" />
+		<script src="https://code.jquery.com/jquery-1.11.3.min.js" ></script>
+	</head>
+	<body>
+		<h1>EAT SHIT!</h1>
+        <h2>click to start</h2>
+
+        <canvas id="myCanvas" width="800" height="500"></canvas>
+
+    <script>
+        document.getElementById("myCanvas").onclick = function() {
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+        var fireBalls = [];
+        var score = 0;
+        fireBalls.push(new createFireBall(canvas.width/2, canvas.height/2, 5, -5, 10));
+
+        var poop = new function() {
+            this.x = getRandomArbitrary(10, canvas.width-10);
+            this.y = getRandomArbitrary(10, canvas.height-10);
+            this.ballRadius = 10;
+            this.color = "brown";
+        }
+
+        var playerBall = new function() {
+            this.x = canvas.width/2;
+            this.y = canvas.height-30;
+            this.dx = 5;
+            this.dy = -5;
+            this.ballRadius = 10;
+        }
+
+        var rightPressed = false;
+        var leftPressed = false;
+        var upPressed = false;
+        var downPressed = false;
+
+        document.addEventListener("keydown", keyDownHandler, false);
+        document.addEventListener("keyup", keyUpHandler, false);
+
+        function keyDownHandler(e) {
+            if(e.keyCode == 39) {
+                rightPressed = true;
+            }
+            else if(e.keyCode == 37) {
+                leftPressed = true;
+            }
+            else if(e.keyCode == 38) {
+                upPressed = true;
+            }
+            else if(e.keyCode == 40) {
+                downPressed = true;
+            }
+        }
+
+        function keyUpHandler(e) {
+            if(e.keyCode == 39){
+                rightPressed = false;
+            }
+            else if(e.keyCode == 37) {
+                leftPressed = false;
+            }
+            else if(e.keyCode == 38) {
+                upPressed = false;
+            }
+            else if(e.keyCode == 40) {
+                downPressed = false;
+            }
+        }
+
+        function createFireBall(x, y, dx, dy, ballRadius) {
+            this.x = x;
+            this.y = y;
+            this.dx = dx;
+            this.dy = dy;
+            this.ballRadius = ballRadius;
+        }
+
+        function createPoopies (x, y, dx, dy, ballRadius) {
+            this.x = x;
+            this.y = y;
+            this.dx = dx;
+            this.dy = dy;
+            this.ballRadius = ballRadius;
+        }
+
+        function getRandomArbitrary(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        function drawPlayerBall() {
+            ctx.beginPath();
+            ctx.arc(playerBall.x, playerBall.y, playerBall.ballRadius, 0, Math.PI*2);
+            ctx.fillStyle = "#0095DD";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawFireBall(x, y, ballRadius, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawScore() {
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "black";
+            ctx.fillText("Score: "+score, 8, 20);
+        }
+
+        function collisionDetector() {
+            for(i=0; i<fireBalls.length; i++) {
+                if(playerBall.x < fireBalls[i].x+10 && playerBall.x > fireBalls[i].x-10 && playerBall.y < fireBalls[i].y+10 && playerBall.y > fireBalls[i].y-10) {
+                    playerBall.x = 10000
+                    playerBall.y = 10000
+                    alert("YOU'VE BEEN CAUGHT! YOUR SCORE: "+score);
+                    $.ajax({
+                        type: "POST",
+                        url: "/",
+                        data: { name: 'apg', score: score }
+                    });
+                    document.location.reload(true);
+                }
+            }
+                if(playerBall.x < poop.x+10 && playerBall.x > poop.x-10 && playerBall.y < poop.y+10 && playerBall.y > poop.y-10) {
+                    poop.x = getRandomArbitrary(poop.ballRadius, canvas.width-poop.ballRadius);
+                    poop.y = getRandomArbitrary(poop.ballRadius, canvas.height-poop.ballRadius);
+                    score += 1;
+                    fireBalls.push(new createFireBall(canvas.width/2, canvas.height/2, getRandomArbitrary(-8, 9), getRandomArbitrary(-8, 9), 10))
+                }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayerBall();
+            drawScore();
+
+            //draw fireballs
+            for(i=0; i<fireBalls.length; i++) {
+                drawFireBall(fireBalls[i].x, fireBalls[i].y, fireBalls[i].ballRadius, "red");
+                fireBalls[i].x += fireBalls[i].dx;
+                fireBalls[i].y += fireBalls[i].dy;
+            }
+
+            //draw poop
+            drawFireBall(poop.x, poop.y, poop.ballRadius, poop.color);
+
+            //checks for collision, adds ball if collision
+            collisionDetector();
+
+            //moves playerball with keyboard arrows
+            if(rightPressed && playerBall.x < canvas.width-playerBall.ballRadius) {
+                playerBall.x += playerBall.dx;
+            }
+            else if(leftPressed && playerBall.x > 0 + playerBall.ballRadius) {
+                playerBall.x -= playerBall.dx;
+            }
+            else if(upPressed && playerBall.y > 0 + playerBall.ballRadius) {
+                playerBall.y += playerBall.dy;
+            }
+            else if(downPressed && playerBall.y < canvas.height - playerBall.ballRadius) {
+                playerBall.y -= playerBall.dy;
+            }
+
+            //moves fireballs
+            for(i=0; i<fireBalls.length; i++) {
+                if(fireBalls[i].x + fireBalls[i].dx > canvas.width-fireBalls[i].ballRadius || fireBalls[i].x + fireBalls[i].dx < fireBalls[i].ballRadius) {
+                    fireBalls[i].dx = -fireBalls[i].dx;
+                }
+                else if (fireBalls[i].y + fireBalls[i].dy < fireBalls[i].ballRadius || fireBalls[i].y + fireBalls[i].dy > canvas.height-fireBalls[i].ballRadius) {
+                    fireBalls[i].dy = -fireBalls[i].dy;
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+        }
+        </script>
+        
+    	<form method="POST" action="/">
+			Name: <input type="text" id="name" name="name" /><br />
+			<input type="submit" value="Submit" />
+		</form>
+        <% entries.forEach(function(entry){ %>
+        <p><%= entry.name %> | <%= entry.score %></p>
+        <% }); %>
+        
+	</body>
+</html>
